@@ -1,0 +1,6 @@
+*.swp
+*.swo
+*~
+cabal.sandbox.config
+dist/
+.cabal-sandbox/
