@@ -1,12 +1,11 @@
 module GOL where
 
-import qualified TorusZip as TZ
-import qualified CyclicZip as CZ
-import Control.Monad (liftM2)
-import Control.Comonad
+import Debug.Trace
+import Data.Array.IArray
+import Data.Array.Unboxed
 
 data GameState = GameState {
-    world :: Grid,
+    world :: World,
     mode :: GOLState,
     timeSinceLastUpdate :: Float,
     lastIteration :: Integer
@@ -33,40 +32,42 @@ paused s = case mode s of
                 Paused -> True
                 _      -> False
 
-data Grid = Grid {
+type Grid = UArray (Int, Int) Bool
+
+data World = World {
     width :: Int,
     height :: Int,
-    grid :: TZ.TorusZipper Bool
+    grid :: Grid
 } deriving (Show)
 
-setupGrid :: Int -> Int -> Grid
-setupGrid x y = let row = replicate x False
-                    rowZipper = CZ.CZ row
-                    grid = CZ.CZ $ replicate y rowZipper
-                    in Grid { width = x, height = y, grid = TZ.TZ grid }
+setupGrid :: Int -> Int -> World
+setupGrid x y = let cells = replicate (x*y) False
+                    grid = listArray ((0, 0), (x-1, y-1)) cells
+                    in World { width = x, height = y, grid = grid }
 
-randomizeGrid :: Int -> Int -> Grid
-randomizeGrid x y = let row1 = CZ.CZ . take x $ cycle [False, True]
-                        row2 = CZ.CZ . take x $ cycle [True, False]
-                        rows = CZ.CZ . take y $ cycle [row1, row2]
-                        in Grid { width = x, height = y, grid = TZ.TZ rows }
+neighbourhood :: World -> (Int, Int) -> [Bool]
+neighbourhood world (x, y) = map (index $ grid world) neighbourPositions
+    where neighbourPositions = [(a, b) | a <- [x-1..x+1], b <- [y-1..y+1], (a,b) /= (x,y)]
+          index grid position = grid ! torusIndex position
+          torusIndex (x, y) = (((w + x) `mod` w), ((h + y) `mod` h))
+          w = width world
+          h = height world
 
-neighbourhood :: [TZ.TorusZipper a -> TZ.TorusZipper a]
-neighbourhood = horizontal ++ vertical ++ liftM2 (.) horizontal vertical
-    where horizontal = [TZ.left, TZ.right]
-          vertical   = [TZ.up,   TZ.down ]
+liveNeighbours :: World -> (Int, Int) -> Int
+liveNeighbours grid (position) = length . filter (== True) $ neighbourhood grid position
 
-neighbourCells :: TZ.TorusZipper Bool -> [Bool]
-neighbourCells grid = map (\d -> extract $ d grid) neighbourhood
+liveOrDie :: World -> (Int, Int) -> Bool
+liveOrDie world position = case liveNeighbours world position of
+                               2 -> (grid world) ! position
+                               3 -> True
+                               _ -> False
 
-liveNeighbours :: TZ.TorusZipper Bool -> Int
-liveNeighbours grid = length . filter (== True) $ neighbourCells grid
+evolve :: World -> World
+evolve g = g { grid = listArray ((0, 0), ((width g) - 1, (height g) - 1)) newCells }
+    where positions = indices $ grid g
+          newCells = map (liveOrDie g) positions
 
-liveOrDie :: TZ.TorusZipper Bool -> Bool
-liveOrDie tz = case liveNeighbours tz of
-                    2 -> extract tz
-                    3 -> True
-                    _ -> False
-
-evolve :: Grid -> Grid
-evolve g = g { grid = extend liveOrDie $ grid g }
+setCellAt :: GameState -> Int -> Int -> Bool -> GameState
+setCellAt state x y alive = let worldGrid = world state
+                                newWorld = worldGrid { grid = (grid worldGrid) // [((x, y), alive)] }
+                                in state { world = newWorld }

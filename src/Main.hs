@@ -5,4 +5,4 @@ import Graphics
 
 main :: IO ()
 main = do
-        runVisualization $ setupGrid 200 150
+        runVisualization $ setupGrid 100 75

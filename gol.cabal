@@ -17,11 +17,12 @@ cabal-version:       >=1.10
 
 executable             gol
   main-is:             Main.hs
-  other-modules:       Graphics, GOL, TorusZip, CyclicZip
+  other-modules:       Graphics, GOL
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7,
                        comonad >=4.2 && <4.3,
                        SDL,
-                       transformers
+                       transformers,
+                       array >= 0.4
   hs-source-dirs:      src/
   default-language:    Haskell2010
