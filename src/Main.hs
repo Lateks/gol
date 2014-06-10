@@ -1,8 +1,8 @@
 module Main where
 
 import GOL
-import Graphics
+import GameLogic
 
 main :: IO ()
 main = do
-        runVisualization $ setupGrid 100 75
+        runSimulation $ setupGrid 100 75

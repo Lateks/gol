@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 
 executable             gol
   main-is:             Main.hs
-  other-modules:       Graphics, GOL, GameState
+  other-modules:       GameLogic, GOL, GameState, UI
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7,
                        SDL,

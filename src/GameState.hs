@@ -1,7 +1,7 @@
 module GameState where
 
-import GOL
 import Data.Array.IArray
+import GOL
 
 stepIntervalChange = 50.0
 
@@ -41,6 +41,17 @@ paused :: GameState -> Bool
 paused s = case mode s of
                 Paused -> True
                 _      -> False
+
+stepSimulation :: GameState -> Integer -> (Bool, GameState)
+stepSimulation state time =
+    if paused state
+       then (False, setIterationTime time state)
+       else let deltaMs = psToMs $ time - lastIteration state
+                st = setIterationTime time $ increaseTimeDelta deltaMs state
+                in if timeSinceLastUpdate st >= stepInterval state
+                      then (True, resetTimeDelta $ evolveState st)
+                      else (False, st)
+    where psToMs ps = fromIntegral ps / 1000000000
 
 setCellAt :: GameState -> Int -> Int -> Bool -> GameState
 setCellAt state x y alive = let worldGrid = world state

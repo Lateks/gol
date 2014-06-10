@@ -1,16 +1,10 @@
-{-# LANGUAGE BangPatterns #-}
+module UI where
 
-module Graphics where
-
-import Debug.Trace
-import System.CPUTime (getCPUTime)
 import Graphics.UI.SDL as SDL
-import Control.Monad.Trans.State.Lazy (StateT, get, put, runStateT)
-import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad (unless, when, forM_)
-import GOL
-import GameState
+import Control.Monad (forM_)
 import Data.Array.IArray
+import GameState
+import GOL
 
 cellWidth, cellPadding, paddedCellWidth :: Int
 cellPadding = 2
@@ -23,51 +17,7 @@ liveCell = Pixel 0xCFF09E
 deadCell = Pixel 0x3B8686
 
 type ShouldQuit = Bool
-type Changed = Bool
-
-runVisualization :: World -> IO ()
-runVisualization gameWorld = do
-    SDL.init [InitEverything]
-    setCaption "Game of Life" ""
-
-    let window = WindowConfig {
-            winWidth = (gridWidth gameWorld) * paddedCellWidth,
-            winHeight = (gridHeight gameWorld) * paddedCellWidth
-        }
-    sdlWindow <- setVideoMode (winWidth window) (winHeight window) 32 [HWSurface, DoubleBuf]
-
-    initialState <- initGame gameWorld window
-
-    drawWorld sdlWindow window (world initialState)
-    runStateT (mainLoop sdlWindow) initialState
-
-    SDL.quit
-
-initGame :: World -> WindowConfig -> IO GameState
-initGame grid windowConfig = do
-    !time <- getCPUTime
-    return GameState {
-        world = grid,
-        mode = Paused,
-        timeSinceLastUpdate = 0.0,
-        lastIteration = time,
-        window = windowConfig,
-        stepInterval = 100.0
-    }
-
-mainLoop :: Surface -> StateT GameState IO ()
-mainLoop sdlWindow = do
-    state <- get
-    !time <- liftIO getCPUTime
-    let (worldEvolved, evolvedState) = stepSimulation state time
-
-    (quit, worldAltered, newState) <- liftIO $ loopEvents evolvedState
-
-    when (worldEvolved || worldAltered) $
-         liftIO $ drawWorld sdlWindow (window newState) (world newState)
-
-    put newState
-    unless quit $ mainLoop sdlWindow
+type WorldChanged = Bool
 
 drawWorld :: Surface -> WindowConfig -> World -> IO ()
 drawWorld surface window worldGrid = do
@@ -85,18 +35,7 @@ drawWorld surface window worldGrid = do
 
     SDL.flip surface
 
-stepSimulation :: GameState -> Integer -> (Bool, GameState)
-stepSimulation state time =
-    if paused state
-       then (False, setIterationTime time state)
-       else let deltaMs = psToMs $ time - lastIteration state
-                st = setIterationTime time $ increaseTimeDelta deltaMs state
-                in if timeSinceLastUpdate st >= stepInterval state
-                      then (True, resetTimeDelta $ evolveState st)
-                      else (False, st)
-    where psToMs ps = fromIntegral ps / 1000000000
-
-loopEvents :: GameState -> IO (ShouldQuit, Changed, GameState)
+loopEvents :: GameState -> IO (ShouldQuit, WorldChanged, GameState)
 loopEvents state = eventLoop False state
     where eventLoop changed state = do
             event <- pollEvent
