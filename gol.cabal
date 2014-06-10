@@ -20,7 +20,6 @@ executable             gol
   other-modules:       Graphics, GOL, GameState
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7,
-                       comonad >=4.2 && <4.3,
                        SDL,
                        transformers,
                        array >= 0.4
