@@ -27,16 +27,14 @@ drawWorld surface window worldGrid = do
         indexedCells = zip (indices cells) (elems cells)
 
     forM_ indexedCells $ \((x, y), cell) ->
-        let color = case cell of
-                        True -> liveCell
-                        False -> deadCell
+        let color = if cell then liveCell else deadCell
             cellDimensions = Rect (x * paddedCellWidth) (y * paddedCellWidth) cellWidth cellWidth
             in fillRect surface (Just cellDimensions) color
 
     SDL.flip surface
 
 loopEvents :: GameState -> IO (ShouldQuit, WorldChanged, GameState)
-loopEvents state = eventLoop False state
+loopEvents = eventLoop False
     where eventLoop changed state = do
             event <- pollEvent
             case event of
@@ -63,7 +61,8 @@ handleEvent s@(GameState _ Running _ _ _ _) e =
         KeyDown (Keysym SDLK_MINUS _ _) -> Just $ increaseStepInterval s
         _                               -> Nothing
 
-setCellAtPixel state xPixel yPixel alive = setCellAt state x y alive
+setCellAtPixel :: Integral a => GameState -> a -> a -> Bool -> GameState
+setCellAtPixel state xPixel yPixel = setCellAt state x y
     where x = toGridIndex xPixel
           y = toGridIndex yPixel
-          toGridIndex pixel = (fromIntegral pixel) `div` paddedCellWidth
+          toGridIndex pixel = fromIntegral pixel `div` paddedCellWidth

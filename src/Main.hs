@@ -4,5 +4,4 @@ import GOL
 import GameLogic
 
 main :: IO ()
-main = do
-        runSimulation $ setupGrid 100 75
+main = runSimulation $ setupGrid 100 75

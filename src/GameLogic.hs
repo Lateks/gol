@@ -17,8 +17,8 @@ runSimulation gameWorld = do
     setCaption "Game of Life" ""
 
     let window = WindowConfig {
-            winWidth = (gridWidth gameWorld) * paddedCellWidth,
-            winHeight = (gridHeight gameWorld) * paddedCellWidth
+            winWidth = gridWidth gameWorld * paddedCellWidth,
+            winHeight = gridHeight gameWorld * paddedCellWidth
         }
     sdlWindow <- setVideoMode (winWidth window) (winHeight window) 32 [HWSurface, DoubleBuf]
 

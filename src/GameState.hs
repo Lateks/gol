@@ -55,5 +55,5 @@ stepSimulation state time =
 
 setCellAt :: GameState -> Int -> Int -> Bool -> GameState
 setCellAt state x y alive = let worldGrid = world state
-                                newWorld = worldGrid { grid = (grid worldGrid) // [((x, y), alive)] }
+                                newWorld = worldGrid { grid = grid worldGrid // [((x, y), alive)] }
                                 in state { world = newWorld }
